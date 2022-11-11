@@ -1,0 +1,60 @@
+#+TITLE: fini
+#+AUTHOR: Xavier Capaldi
+
+fini is a small and unsophisticated tool inspired by Eric Radman's [[https://eradman.com/entrproject/][entr]].
+Given a directory, it will monitor the size and modification timestamp of files on a polling period.
+When a file is not longer updated in the polling period, it is assumed to be finished and an arbitrary command is executed.
+
+This was designed primarily for the pseudo-live analysis of data files during lab experiments.
+For example, I record nanopore data in ~.abf~ format.
+Each file is 30 seconds in length but over the course of an experiment I will accumulate hundreds of files.
+I might want to monitor some component of the data "live".
+I can achieve this with:
+
+#+BEGIN_SRC
+C:\path\fini-amd64.exe -dir=path\to\acquisition\directory\ -match=*.abf -command="python" -options="my-analysis-script.py,/_"
+#+END_SRC
+
+Where ~my-analysis-script.py~ would take care of parsing the ABF file and returning some useful information that is logged by fini to the terminal.
+
+** Usage
+fini accepts all parameters as flags.
+
+*** -cmd
+The base command to trigger on each finished file.
+For example ~-cmd=python~ or ~-cmd=wc~.
+The command must be present in path.
+
+*** -dir
+The directory to watch (defaults to ".").
+
+*** -glob
+Globbing pattern for files to watch (defaults "*").
+Check the [[https://pkg.go.dev/path@go1.19.3#Match][pattern syntax here]].
+
+*** -ignore
+Boolean flag to indicate whether files that are already present in the directory should be processed.
+For example, you have already recorded a few data files and you don't want them to be processed, you can set ~-ignore~ (or do nothing since that is default).
+If you want them to be processed set ~-ignore=false~.
+
+*** -options
+Comma-separated list of command options.
+The special ~/_~ sequence will be replaced with the file name of the finished file.
+For example ~-cmd=wc -options=-l,/_~ which amounts to ~wc -l finished-file~.
+With Python ~-cmd=python -options=path/to/script.py,/_~.
+
+*** poll
+The period between each successive check of a given file (defaults to 5s).
+
+*** procs
+The cap on the max number of parallel processes (defaults to the number of CPU cores).
+
+** Building
+If you don't want to use one of the prebuilt binaries, you can easily compile fini yourself.
+It is written in Go; particularly version 1.16.
+Using make you can simply run ~make clean && make~ to generate binaries to Windows, Mac and GNU/Linux in the ~bin~ directory.
+
+** Future improvements
+- Recursive file globbing
+- Logging to file
+- Better CLI interface
